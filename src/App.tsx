@@ -44,7 +44,7 @@ function useQueryParams(): Record<string, string> {
 }
 
 function Stat({ label, value }: { label: string; value: ReactNode }) {
-  async function onShare() {
+  const onShare = async () => {
     const url = window.location.origin;
     const parts: string[] = [];
     if (me) {
@@ -73,7 +73,7 @@ function Stat({ label, value }: { label: string; value: ReactNode }) {
         setTimeout(() => setShareHint(""), 2000);
       } catch {}
     }
-  }
+  };
 
   return (
     <div className="flex flex-col items-center px-4 py-2">
