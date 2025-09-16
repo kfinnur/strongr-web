@@ -1,32 +1,49 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode, type ButtonHTMLAttributes, type FormEvent } from "react";
 
 /**
- * Fitness Registration + Leaderboards — Single-file React app
- * -----------------------------------------------------------
- * Drop into any Vite/Next/CRA environment. Uses Tailwind for styling.
+ * Fitness Registration + Leaderboards — Single-file React app (TypeScript)
+ * -----------------------------------------------------------------------
+ * Drop into any Vite React + TS project. Uses Tailwind for styling.
  *
  * FLOW
  * 1) Reads QR query params: event, device, country, time, t, nonce, sig, countryName, localDT
  * 2) Shows a registration form with read-only summary of Time • Country • Local Date/Time
- * 3) Submits to your backend POST /api/register (expects JSON response with rank + leaderboards)
+ * 3) Submits to your backend POST /register (expects JSON response with rank + leaderboards)
  * 4) Displays Country Top 100 and Global Top 20 leaderboards
- *
- * CONFIG — set your API base URL here (https domain recommended)
  */
 const API_BASE = "https://lfmgpiaokicvdejzxxxr.supabase.co/functions/v1/api"; // Supabase Edge Function base URL
 
+// ---------- Types ----------
+export type LeaderboardRow = {
+  id?: number;
+  name: string;
+  age?: number | null;
+  gender?: string | null;
+  country: string;
+  time_seconds: number;
+  created_at?: string;
+  t_qr?: string;
+};
+
+export type MeRow = LeaderboardRow & {
+  rank_country?: number;
+  rank_global?: number;
+};
+
 // Utility: ordinals (1st, 2nd, 3rd, ...)
-function ordinal(n) {
-  const s = ["th", "st", "nd", "rd"], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"] as const;
+  const v = n % 100;
+  // @ts-ignore - small helper, safe for our use
+  return String(n) + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-function useQueryParams() {
+function useQueryParams(): Record<string, string> {
   const [params] = useState(() => Object.fromEntries(new URLSearchParams(window.location.search).entries()));
-  return params;
+  return params as Record<string, string>;
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col items-center px-4 py-2">
       <div className="text-sm uppercase tracking-widest text-gray-400">{label}</div>
@@ -35,7 +52,7 @@ function Stat({ label, value }) {
   );
 }
 
-function Hero({ time, countryName, localDT, rankPreview }) {
+function Hero({ time, countryName, localDT, rankPreview }: { time: number; countryName?: string; localDT?: string; rankPreview?: number | null; }) {
   return (
     <div className="w-full rounded-3xl p-6 md:p-10 bg-gradient-to-br from-zinc-900/80 to-zinc-800/80 border border-white/10 shadow-xl">
       <h1 className="text-3xl md:text-5xl font-bold text-white text-center">Register Your Result</h1>
@@ -54,7 +71,7 @@ function Hero({ time, countryName, localDT, rankPreview }) {
   );
 }
 
-function Input({ label, children }) {
+function Input({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
       <span className="text-sm text-gray-300">{label}</span>
@@ -63,7 +80,7 @@ function Input({ label, children }) {
   );
 }
 
-function Button({ children, className = "", ...props }) {
+function Button({ children, className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { className?: string }) {
   return (
     <button
       {...props}
@@ -74,7 +91,7 @@ function Button({ children, className = "", ...props }) {
   );
 }
 
-function Table({ title, rows, highlight }) {
+function Table({ title, rows, highlight }: { title: string; rows: LeaderboardRow[]; highlight?: LeaderboardRow | null; }) {
   return (
     <div className="bg-zinc-900/70 border border-white/10 rounded-2xl overflow-hidden">
       <div className="px-4 py-3 border-b border-white/10 text-white font-semibold">{title}</div>
@@ -93,16 +110,16 @@ function Table({ title, rows, highlight }) {
           </thead>
           <tbody className="divide-y divide-white/5">
             {rows?.map((r, idx) => {
-              const isYou = highlight && highlight.name === r.name && highlight.time_seconds === r.time_seconds && highlight.country === r.country;
+              const isYou = !!highlight && highlight.name === r.name && highlight.time_seconds === r.time_seconds && highlight.country === r.country;
               return (
-                <tr key={r.id || `${r.country}-${idx}`} className={isYou ? "bg-lime-500/10" : ""}>
+                <tr key={r.id ?? `${r.country}-${idx}`} className={isYou ? "bg-lime-500/10" : ""}>
                   <td className="px-4 py-2 text-zinc-200">{idx + 1}</td>
                   <td className="px-4 py-2 text-white font-medium">{r.name}</td>
                   <td className="px-4 py-2 text-zinc-200">{r.age ?? ""}</td>
                   <td className="px-4 py-2 text-zinc-200">{r.gender ?? ""}</td>
                   <td className="px-4 py-2 text-zinc-200">{r.country}</td>
                   <td className="px-4 py-2 text-zinc-100">{Number(r.time_seconds).toFixed(2)}</td>
-                  <td className="px-4 py-2 text-zinc-400">{new Date(r.created_at || r.t_qr || Date.now()).toLocaleDateString()}</td>
+                  <td className="px-4 py-2 text-zinc-400">{new Date((r.created_at ?? r.t_qr) ?? Date.now()).toLocaleDateString()}</td>
                 </tr>
               );
             })}
@@ -113,18 +130,18 @@ function Table({ title, rows, highlight }) {
   );
 }
 
-export default function App() {
+export default function App(): JSX.Element {
   const qp = useQueryParams();
-  const [step, setStep] = useState("form");
+  const [step, setStep] = useState<"form" | "leaderboards">("form");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [rankPreview, setRankPreview] = useState(null);
+  const [rankPreview, setRankPreview] = useState<number | null>(null);
 
-  const [form, setForm] = useState({ name: "", age: "", gender: "" });
+  const [form, setForm] = useState<{ name: string; age: string; gender: string }>({ name: "", age: "", gender: "" });
 
-  const [me, setMe] = useState(null); // record returned by backend
-  const [lbCountry, setLbCountry] = useState([]);
-  const [lbGlobal, setLbGlobal] = useState([]);
+  const [me, setMe] = useState<MeRow | null>(null); // record returned by backend
+  const [lbCountry, setLbCountry] = useState<LeaderboardRow[]>([]);
+  const [lbGlobal, setLbGlobal] = useState<LeaderboardRow[]>([]);
 
   const countryCode = qp.country || "";
   const countryName = qp.countryName || qp.country || "";
@@ -138,15 +155,19 @@ export default function App() {
         const url = `${API_BASE}/rank_preview?country=${encodeURIComponent(countryCode)}&time=${encodeURIComponent(timeSec)}`;
         const res = await fetch(url);
         if (!res.ok) return;
-        const data = await res.json();
+        const data = (await res.json()) as { rank?: number };
         if (!ignore && typeof data.rank === "number") setRankPreview(data.rank);
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     }
     if (countryCode && timeSec > 0) run();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [countryCode, timeSec]);
 
-  async function onSubmit(e) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError("");
@@ -174,13 +195,17 @@ export default function App() {
         const msg = await res.text();
         throw new Error(msg || "Failed to register");
       }
-      const data = await res.json();
+      const data = (await res.json()) as {
+        me: MeRow;
+        leaderboard_country: LeaderboardRow[];
+        leaderboard_global: LeaderboardRow[];
+      };
       setMe(data.me);
       setLbCountry(data.leaderboard_country || []);
       setLbGlobal(data.leaderboard_global || []);
       setStep("leaderboards");
-    } catch (err) {
-      setError(err.message || String(err));
+    } catch (err: any) {
+      setError(err?.message || String(err));
     } finally {
       setSubmitting(false);
     }
@@ -201,7 +226,7 @@ export default function App() {
         {step === "form" && (
           <>
             <div className="mt-8">
-              <Hero time={timeSec} countryName={countryName} localDT={qp.localDT} rankPreview={rankPreview} />
+              <Hero time={timeSec} countryName={countryName} localDT={qp.localDT} rankPreview={rankPreview ?? undefined} />
             </div>
 
             <form onSubmit={onSubmit} className="mt-8 grid gap-6 bg-zinc-900/60 border border-white/10 rounded-3xl p-6 md:p-8">
