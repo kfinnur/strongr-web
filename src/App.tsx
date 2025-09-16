@@ -44,6 +44,37 @@ function useQueryParams(): Record<string, string> {
 }
 
 function Stat({ label, value }: { label: string; value: ReactNode }) {
+  async function onShare() {
+    const url = window.location.origin;
+    const parts: string[] = [];
+    if (me) {
+      parts.push(`I held for ${Number(me.time_seconds).toFixed(2)}s in ${countryName || me.country}.`);
+      if (me.rank_country) parts.push(`National rank: ${ordinal(me.rank_country)}.`);
+      if (me.rank_global) parts.push(`Global rank: ${ordinal(me.rank_global)}.`);
+    } else {
+      parts.push("Check out StrongR leaderboards.");
+    }
+    const text = parts.join(" ") + " #StrongR";
+    try {
+      // Mobile native share if available
+      // @ts-ignore - navigator.share detection
+      if (typeof navigator !== "undefined" && typeof (navigator as any).share === "function") {
+        // @ts-ignore
+        await (navigator as any).share({ title: "My StrongR result", text, url });
+      } else if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        setShareHint("Copied share text to clipboard");
+        setTimeout(() => setShareHint(""), 2000);
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        setShareHint("Copied share text to clipboard");
+        setTimeout(() => setShareHint(""), 2000);
+      } catch {}
+    }
+  }
+
   return (
     <div className="flex flex-col items-center px-4 py-2">
       <div className="text-sm uppercase tracking-widest text-gray-400">{label}</div>
@@ -142,6 +173,7 @@ export default function App(): JSX.Element {
   const [me, setMe] = useState<MeRow | null>(null); // record returned by backend
   const [lbCountry, setLbCountry] = useState<LeaderboardRow[]>([]);
   const [lbGlobal, setLbGlobal] = useState<LeaderboardRow[]>([]);
+  const [shareHint, setShareHint] = useState<string>("");
 
   const countryCode = qp.country || "";
   const countryName = qp.countryName || qp.country || "";
@@ -300,6 +332,10 @@ export default function App(): JSX.Element {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <Table title={`Top 100 — ${countryName}`} rows={lbCountry} highlight={me} />
               <Table title="Top 20 — Global" rows={lbGlobal} highlight={me} />
+            </div>
+            <div className="flex items-center justify-center mt-2">
+              <Button onClick={onShare}>Share result</Button>
+              {shareHint && <span className="ml-3 text-xs text-zinc-400">{shareHint}</span>}
             </div>
 
             <div className="mt-8 text-center text-zinc-400">
