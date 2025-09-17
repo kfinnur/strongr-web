@@ -100,11 +100,11 @@ function Table({ title, rows, highlight }: { title: string; rows: LeaderboardRow
           <thead>
             <tr className="text-zinc-300 text-sm">
               <th className="px-4 py-2">#</th>
+              <th className="px-4 py-2">Time (s)</th>
               <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Age</th>
               <th className="px-4 py-2">Gender</th>
               <th className="px-4 py-2">Country</th>
-              <th className="px-4 py-2">Time (s)</th>
               <th className="px-4 py-2">Date</th>
             </tr>
           </thead>
@@ -114,11 +114,11 @@ function Table({ title, rows, highlight }: { title: string; rows: LeaderboardRow
               return (
                 <tr key={r.id ?? `${r.country}-${idx}`} className={isYou ? "bg-lime-500/10" : ""}>
                   <td className="px-4 py-2 text-zinc-200">{idx + 1}</td>
+                  <td className="px-4 py-2 text-zinc-100 font-medium">{Number(r.time_seconds).toFixed(2)}</td>
                   <td className="px-4 py-2 text-white font-medium">{r.name}</td>
                   <td className="px-4 py-2 text-zinc-200">{r.age ?? ""}</td>
                   <td className="px-4 py-2 text-zinc-200">{r.gender ?? ""}</td>
                   <td className="px-4 py-2 text-zinc-200">{r.country}</td>
-                  <td className="px-4 py-2 text-zinc-100">{Number(r.time_seconds).toFixed(2)}</td>
                   <td className="px-4 py-2 text-zinc-400">{new Date((r.created_at ?? r.t_qr) ?? Date.now()).toLocaleDateString()}</td>
                 </tr>
               );
