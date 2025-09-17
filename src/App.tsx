@@ -56,7 +56,7 @@ function Hero({ time, countryName, localDT, rankPreview }: { time: number; count
   return (
     <div className="w-full rounded-3xl p-6 md:p-10 bg-gradient-to-br from-zinc-900/80 to-zinc-800/80 border border-white/10 shadow-xl">
       <h1 className="text-3xl md:text-5xl font-bold text-white text-center">Register Your Result</h1>
-      <p className="mt-3 text-center text-zinc-300">Strong today, stronger tomorrow.</p>
+      <p className="mt-3 text-center text-zinc-300">Beat your time and climb the ranks.</p>
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Stat label="Your Time" value={`${Number(time).toFixed(2)} sec`} />
@@ -219,7 +219,7 @@ export default function App(): JSX.Element {
           <div className="text-2xl font-black tracking-tight">
             STRONG<span className="text-lime-400">•</span>R
           </div>
-          <div className="text-xs md:text-sm text-zinc-400">Move more. Grip harder. Live better.</div>
+          <div className="text-xs md:text-sm text-zinc-400">Build strength, one day at a time.</div>
         </header>
 
         {/* HERO & FORM */}
